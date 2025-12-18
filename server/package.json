@@ -1,0 +1,23 @@
+{
+  "name": "card-sorting-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for card sorting tool collaboration",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.13",
+    "ts-node-dev": "^2.0.0"
+  }
+}
