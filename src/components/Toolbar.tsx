@@ -72,9 +72,39 @@ export const Toolbar = () => {
   };
 
   const handleNewProject = () => {
-    if (confirm('Create a new project? Any unsaved changes will be lost.')) {
-      window.location.href = window.location.pathname; // Clear URL params and reload
+    // Ask for project name
+    const projectName = prompt('Enter new project name:');
+
+    if (!projectName || projectName.trim().length < 3) {
+      if (projectName !== null) {
+        alert('Project name must be at least 3 characters');
+      }
+      return;
     }
+
+    // Create new project with the given name
+    const { loadProject } = useStore.getState();
+    const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    const newProject = {
+      id: generateId(),
+      name: projectName.trim(),
+      stickies: [],
+      canvasInstances: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      ownerId: session?.userId,
+      ownerUsername: session?.username,
+    };
+
+    // Save it immediately to localStorage
+    saveProject(newProject);
+
+    // Load it into the editor
+    loadProject(newProject);
+
+    // Clear URL params to create fresh board
+    window.history.replaceState({}, '', window.location.pathname);
   };
 
   const handleLogout = () => {
