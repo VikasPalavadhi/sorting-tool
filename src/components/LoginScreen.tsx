@@ -106,15 +106,6 @@ export const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
             )}
           </button>
         </form>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs font-semibold text-gray-700 mb-2">Demo Credentials:</p>
-          <div className="space-y-1 text-xs text-gray-600">
-            <p><span className="font-medium">User 1:</span> user1 / martechuser1</p>
-            <p><span className="font-medium">User 2:</span> user2 / martechuser2</p>
-          </div>
-        </div>
       </div>
     </div>
   );
