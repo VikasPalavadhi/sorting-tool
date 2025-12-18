@@ -40,13 +40,6 @@ class WebSocketService {
           project
         });
 
-        // Re-subscribe all event handlers
-        this.eventHandlers.forEach((callbacks, event) => {
-          callbacks.forEach(callback => {
-            this.socket?.on(event, callback);
-          });
-        });
-
         resolve();
       });
 
@@ -72,6 +65,8 @@ class WebSocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      // Clear event handlers to prevent accumulation
+      this.eventHandlers.clear();
       console.log('Disconnected from WebSocket server');
     }
   }
