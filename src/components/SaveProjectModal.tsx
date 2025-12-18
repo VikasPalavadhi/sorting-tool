@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Copy } from 'lucide-react';
 
 interface SaveProjectModalProps {
   isOpen: boolean;
@@ -10,20 +10,26 @@ interface SaveProjectModalProps {
   onClose: () => void;
 }
 
-export const SaveProjectModal = ({ isOpen, currentProjectName, isExistingProject, onSave, onSaveAs, onClose }: SaveProjectModalProps) => {
+export const SaveProjectModal = ({
+  isOpen,
+  currentProjectName,
+  isExistingProject,
+  onSave,
+  onSaveAs,
+  onClose
+}: SaveProjectModalProps) => {
+  const [showNameInput, setShowNameInput] = useState(!isExistingProject);
   const [projectName, setProjectName] = useState(currentProjectName);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState<'save' | 'saveAs'>(isExistingProject ? 'save' : 'saveAs');
 
-  const handleSave = () => {
-    if (mode === 'save' && isExistingProject) {
-      // Direct save - no name change
-      onSave(currentProjectName);
-      onClose();
-      return;
-    }
+  const handleDirectSave = () => {
+    // Save to existing project without asking for name
+    onSave(currentProjectName);
+    onClose();
+  };
 
-    // Save As - validate name
+  const handleSaveAsNew = () => {
+    // Validate name
     const trimmedName = projectName.trim();
 
     if (!trimmedName) {
@@ -36,17 +42,33 @@ export const SaveProjectModal = ({ isOpen, currentProjectName, isExistingProject
       return;
     }
 
-    if (mode === 'save') {
-      onSave(trimmedName);
-    } else {
-      onSaveAs(trimmedName);
+    onSaveAs(trimmedName);
+    onClose();
+  };
+
+  const handleSaveNewProject = () => {
+    // For new projects, validate and save
+    const trimmedName = projectName.trim();
+
+    if (!trimmedName) {
+      setError('Project name cannot be empty');
+      return;
     }
+
+    if (trimmedName.length < 3) {
+      setError('Project name must be at least 3 characters');
+      return;
+    }
+
+    onSave(trimmedName);
     onClose();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSave();
+      if (showNameInput) {
+        isExistingProject ? handleSaveAsNew() : handleSaveNewProject();
+      }
     } else if (e.key === 'Escape') {
       onClose();
     }
@@ -73,42 +95,38 @@ export const SaveProjectModal = ({ isOpen, currentProjectName, isExistingProject
 
         {/* Content */}
         <div className="p-6">
-          {/* Save mode selector for existing projects */}
-          {isExistingProject && (
-            <div className="mb-4 flex gap-2">
+          {isExistingProject && !showNameInput ? (
+            // Existing project - show two button options
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Current project: <span className="font-semibold text-gray-800">"{currentProjectName}"</span>
+              </p>
+
               <button
-                onClick={() => setMode('save')}
-                className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-                  mode === 'save'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                onClick={handleDirectSave}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
+                <Save size={18} />
                 Save
               </button>
+
               <button
-                onClick={() => setMode('saveAs')}
-                className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-                  mode === 'saveAs'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                onClick={() => setShowNameInput(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
               >
+                <Copy size={18} />
                 Save As New
               </button>
-            </div>
-          )}
 
-          {mode === 'save' && isExistingProject ? (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-gray-700">
-                Save changes to <span className="font-semibold">"{currentProjectName}"</span>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                "Save" will update the current project. "Save As New" will create a copy.
               </p>
             </div>
           ) : (
+            // New project or Save As New - show name input
             <>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name
+                {isExistingProject ? 'New Project Name' : 'Project Name'}
               </label>
               <input
                 type="text"
@@ -126,28 +144,47 @@ export const SaveProjectModal = ({ isOpen, currentProjectName, isExistingProject
                 <p className="mt-2 text-sm text-red-600">{error}</p>
               )}
               <p className="mt-2 text-xs text-gray-500">
-                {mode === 'saveAs' ? 'This will create a new project copy.' : 'This will save your project to the dashboard.'}
+                {isExistingProject
+                  ? 'This will create a new project copy with a different name.'
+                  : 'Choose a name for your project (min 3 characters).'}
               </p>
+
+              <div className="flex gap-3 mt-6">
+                {isExistingProject && (
+                  <button
+                    onClick={() => {
+                      setShowNameInput(false);
+                      setError('');
+                      setProjectName(currentProjectName);
+                    }}
+                    className="flex-1 px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  onClick={isExistingProject ? handleSaveAsNew : handleSaveNewProject}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Save size={18} />
+                  {isExistingProject ? 'Save As New' : 'Save'}
+                </button>
+              </div>
             </>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Save size={18} />
-            {mode === 'save' && isExistingProject ? 'Save Changes' : mode === 'saveAs' ? 'Save As New' : 'Save Project'}
-          </button>
-        </div>
+        {/* Footer - only show cancel if not in two-button mode */}
+        {(!isExistingProject || showNameInput) && (
+          <div className="p-4 border-t bg-gray-50 flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
