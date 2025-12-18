@@ -6,13 +6,31 @@ import { SaveProjectModal } from './SaveProjectModal';
 import { Dashboard } from './Dashboard';
 import { CollaborationStatus } from './CollaborationStatus';
 import { saveProject, isProjectSaved, saveProjectAs } from '../store/projectStorage';
-import { useCollaboration } from '../hooks/useCollaboration';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 export const Toolbar = () => {
   const { project, updateProjectName, logout, isOwner, boardId, session } = useStore();
-  const { copyBoardUrl } = useCollaboration(boardId);
+
+  // Copy board URL function (not using hook to avoid duplicate subscription)
+  const copyBoardUrl = () => {
+    if (!boardId) {
+      alert('No board ID available');
+      return;
+    }
+
+    const url = `${window.location.origin}${window.location.pathname}?boardId=${boardId}`;
+
+    navigator.clipboard.writeText(url).then(
+      () => {
+        alert('Board link copied to clipboard!\n\nShare this link with others to collaborate.');
+      },
+      (err) => {
+        console.error('Failed to copy:', err);
+        alert(`Failed to copy link. URL: ${url}`);
+      }
+    );
+  };
   const [isEditingName, setIsEditingName] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);

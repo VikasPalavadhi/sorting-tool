@@ -76,14 +76,33 @@ export const useStore = create<StoreState>((set, get) => ({
   logout: () => {
     authLogout();
     websocketService.disconnect();
+
+    // Clear all project data from localStorage
+    try {
+      localStorage.removeItem('card-sorting-tool-project');
+    } catch (error) {
+      console.error('Failed to clear project data:', error);
+    }
+
+    // Create a fresh project for the next user
+    const freshProject = createInitialProject();
+
     set({
       session: null,
       isAuthenticated: false,
       boardId: null,
       isOwner: false,
       connectedUsers: [],
-      isConnectedToServer: false
+      isConnectedToServer: false,
+      project: freshProject,
+      history: [freshProject],
+      historyIndex: 0,
+      canUndo: false,
+      canRedo: false,
+      stickyActivities: new Map(),
     });
+
+    saveToStorage(freshProject);
   },
 
   // Collaboration actions
