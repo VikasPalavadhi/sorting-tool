@@ -77,14 +77,15 @@ export const useStore = create<StoreState>((set, get) => ({
     authLogout();
     websocketService.disconnect();
 
-    // Clear all project data from localStorage
+    // Clear the working project from localStorage
+    // Each user will create their own fresh project on login
     try {
       localStorage.removeItem('card-sorting-tool-project');
     } catch (error) {
       console.error('Failed to clear project data:', error);
     }
 
-    // Create a fresh project for the next user
+    // Create a fresh empty project for the logout state
     const freshProject = createInitialProject();
 
     set({
@@ -102,7 +103,7 @@ export const useStore = create<StoreState>((set, get) => ({
       stickyActivities: new Map(),
     });
 
-    saveToStorage(freshProject);
+    // DO NOT save to storage - let each user create their own project on login
   },
 
   // Collaboration actions
