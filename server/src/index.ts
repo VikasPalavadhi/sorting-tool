@@ -110,8 +110,8 @@ io.on('connection', (socket: Socket) => {
       board.project.stickies.push(sticky);
       board.updatedAt = Date.now();
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('sticky:created', { sticky });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('sticky:created', { sticky });
       console.log(`Sticky created in board ${boardId}`);
     }
   });
@@ -132,8 +132,8 @@ io.on('connection', (socket: Socket) => {
         board.updatedAt = Date.now();
       }
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('sticky:updated', { stickyId, updates });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('sticky:updated', { stickyId, updates });
       console.log(`Sticky ${stickyId} updated in board ${boardId}`);
     }
   });
@@ -149,8 +149,8 @@ io.on('connection', (socket: Socket) => {
       board.project.canvasInstances = board.project.canvasInstances.filter((ci: any) => ci.stickyId !== stickyId);
       board.updatedAt = Date.now();
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('sticky:deleted', { stickyId });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('sticky:deleted', { stickyId });
       console.log(`Sticky ${stickyId} deleted from board ${boardId}`);
     }
   });
@@ -165,8 +165,8 @@ io.on('connection', (socket: Socket) => {
       board.project.canvasInstances.push(instance);
       board.updatedAt = Date.now();
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('instance:created', { instance });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('instance:created', { instance });
       console.log(`Canvas instance created in board ${boardId}`);
     }
   });
@@ -187,8 +187,8 @@ io.on('connection', (socket: Socket) => {
         board.updatedAt = Date.now();
       }
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('instance:updated', { instanceId, updates });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('instance:updated', { instanceId, updates });
       console.log(`Instance ${instanceId} updated in board ${boardId}`);
     }
   });
@@ -203,8 +203,8 @@ io.on('connection', (socket: Socket) => {
       board.project.canvasInstances = board.project.canvasInstances.filter((ci: any) => ci.id !== instanceId);
       board.updatedAt = Date.now();
 
-      // Broadcast to all users in board
-      io.to(boardId).emit('instance:deleted', { instanceId });
+      // Broadcast to other users in board (exclude sender)
+      socket.broadcast.to(boardId).emit('instance:deleted', { instanceId });
       console.log(`Instance ${instanceId} deleted from board ${boardId}`);
     }
   });
