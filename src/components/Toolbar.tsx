@@ -11,7 +11,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 export const Toolbar = () => {
-  const { project, updateProjectName, logout, isOwner, boardId } = useStore();
+  const { project, updateProjectName, logout, isOwner, boardId, session } = useStore();
   const { copyBoardUrl } = useCollaboration(boardId);
   const [isEditingName, setIsEditingName] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
@@ -26,14 +26,27 @@ export const Toolbar = () => {
       updateProjectName(name);
     }
     // Save to localStorage (overwrites existing)
-    const updatedProject = { ...project, name, updatedAt: Date.now() };
+    // Ensure owner info is set
+    const updatedProject = {
+      ...project,
+      name,
+      updatedAt: Date.now(),
+      ownerId: project.ownerId || session?.userId,
+      ownerUsername: project.ownerUsername || session?.username,
+    };
     saveProject(updatedProject);
     setIsSaveModalOpen(false);
   };
 
   const handleSaveAsProject = (name: string) => {
     // Save as a new project with new ID
-    const newProject = saveProjectAs(project, name);
+    // Set current user as owner of the new project
+    const projectWithOwner = {
+      ...project,
+      ownerId: session?.userId,
+      ownerUsername: session?.username,
+    };
+    const newProject = saveProjectAs(projectWithOwner, name);
     // Load the new project into the store
     const { loadProject } = useStore.getState();
     loadProject(newProject);

@@ -5,7 +5,10 @@ const STORAGE_KEY = 'card-sorting-auth-session';
 // Hardcoded users for authentication
 const USERS: User[] = [
   { id: '1', username: 'user1', password: 'martechuser1' },
-  { id: '2', username: 'user2', password: 'martechuser2' }
+  { id: '2', username: 'user2', password: 'martechuser2' },
+  { id: '3', username: 'user3', password: 'martechuser3' },
+  { id: '4', username: 'user4', password: 'martechuser4' },
+  { id: '5', username: 'user5', password: 'martechuser5' }
 ];
 
 /**

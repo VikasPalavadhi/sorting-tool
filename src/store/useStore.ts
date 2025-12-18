@@ -29,17 +29,20 @@ const saveToStorage = (project: Project) => {
 };
 
 // Create initial project
-const createInitialProject = (): Project => ({
+const createInitialProject = (session?: ReturnType<typeof getSession>): Project => ({
   id: generateId(),
   name: 'Untitled Project',
   stickies: [],
   canvasInstances: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
+  ownerId: session?.userId,
+  ownerUsername: session?.username,
 });
 
-const initialProject = loadFromStorage() || createInitialProject();
 const initialSession = getSession();
+const initialProject = loadFromStorage() || createInitialProject(initialSession);
+const initialIsOwner = initialSession !== null && initialProject.ownerId === initialSession.userId;
 
 export const useStore = create<StoreState>((set, get) => ({
   project: initialProject,
@@ -54,7 +57,7 @@ export const useStore = create<StoreState>((set, get) => ({
 
   // Collaboration state
   boardId: null,
-  isOwner: false,
+  isOwner: initialIsOwner,
   connectedUsers: [],
   isConnectedToServer: false,
   stickyActivities: new Map(),
@@ -500,12 +503,18 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   loadProject: (project: Project) => {
+    const { session } = get();
+    const isOwner = session !== null && project.ownerId === session.userId;
     set({
       project,
       history: [project],
       historyIndex: 0,
       canUndo: false,
       canRedo: false,
+      isOwner,
+      boardId: null, // Clear board when loading a new project
+      connectedUsers: [],
+      isConnectedToServer: false,
     });
     saveToStorage(project);
   },
