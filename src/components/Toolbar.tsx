@@ -95,7 +95,6 @@ export const Toolbar = () => {
 
   const handleSaveAsProject = async (name: string) => {
     // Generate new IDs for the duplicate
-    const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const generateBoardId = () => `board-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     const newBoardId = generateBoardId();
