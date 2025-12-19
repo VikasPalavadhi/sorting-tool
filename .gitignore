@@ -40,3 +40,8 @@ coverage
 
 # OS files
 Thumbs.db
+
+# Database files
+server/data/
+*.db
+*.db-journal

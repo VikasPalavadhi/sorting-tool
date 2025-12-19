@@ -33,12 +33,12 @@ export const SaveProjectModal = ({
     const trimmedName = projectName.trim();
 
     if (!trimmedName) {
-      setError('Project name cannot be empty');
+      setError('Board name cannot be empty');
       return;
     }
 
     if (trimmedName.length < 3) {
-      setError('Project name must be at least 3 characters');
+      setError('Board name must be at least 3 characters');
       return;
     }
 
@@ -47,16 +47,16 @@ export const SaveProjectModal = ({
   };
 
   const handleSaveNewProject = () => {
-    // For new projects, validate and save
+    // For new boards, validate and save
     const trimmedName = projectName.trim();
 
     if (!trimmedName) {
-      setError('Project name cannot be empty');
+      setError('Board name cannot be empty');
       return;
     }
 
     if (trimmedName.length < 3) {
-      setError('Project name must be at least 3 characters');
+      setError('Board name must be at least 3 characters');
       return;
     }
 
@@ -83,7 +83,7 @@ export const SaveProjectModal = ({
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-2">
             <Save className="text-blue-600" size={24} />
-            <h2 className="text-xl font-semibold text-gray-800">Save Project</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Save Board</h2>
           </div>
           <button
             onClick={onClose}
@@ -96,10 +96,10 @@ export const SaveProjectModal = ({
         {/* Content */}
         <div className="p-6">
           {isExistingProject && !showNameInput ? (
-            // Existing project - show two button options
+            // Existing board - show two button options
             <div className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
-                Current project: <span className="font-semibold text-gray-800">"{currentProjectName}"</span>
+                Current board: <span className="font-semibold text-gray-800">"{currentProjectName}"</span>
               </p>
 
               <button
@@ -119,14 +119,14 @@ export const SaveProjectModal = ({
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-2">
-                "Save" will update the current project. "Save As New" will create a copy.
+                "Save" will update the current board. "Save As New" will create a copy.
               </p>
             </div>
           ) : (
-            // New project or Save As New - show name input
+            // New board or Save As New - show name input
             <>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {isExistingProject ? 'New Project Name' : 'Project Name'}
+                {isExistingProject ? 'New Board Name' : 'Board Name'}
               </label>
               <input
                 type="text"
@@ -136,7 +136,7 @@ export const SaveProjectModal = ({
                   setError('');
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Enter project name"
+                placeholder="Enter board name"
                 className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
               />
@@ -145,8 +145,8 @@ export const SaveProjectModal = ({
               )}
               <p className="mt-2 text-xs text-gray-500">
                 {isExistingProject
-                  ? 'This will create a new project copy with a different name.'
-                  : 'Choose a name for your project (min 3 characters).'}
+                  ? 'This will create a new board copy with a different name.'
+                  : 'Choose a name for your board (min 3 characters).'}
               </p>
 
               <div className="flex gap-3 mt-6">

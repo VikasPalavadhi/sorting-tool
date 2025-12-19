@@ -15,6 +15,8 @@ export interface ProjectMetadata {
   updatedAt: number;
   stickyCount: number;
   canvasCount: number;
+  ownerId?: string;
+  ownerUsername?: string;
 }
 
 /**
@@ -49,6 +51,8 @@ export const saveProject = (project: Project): void => {
       updatedAt: project.updatedAt,
       stickyCount: project.stickies.length,
       canvasCount: project.canvasInstances.length,
+      ownerId: project.ownerId,
+      ownerUsername: project.ownerUsername,
     };
 
     if (existingIndex >= 0) {

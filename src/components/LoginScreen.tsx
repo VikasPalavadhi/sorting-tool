@@ -17,15 +17,21 @@ export const LoginScreen = ({ onLoginSuccess }: LoginScreenProps) => {
     setError('');
     setIsLoading(true);
 
-    // Attempt login
-    const session = login(username, password);
+    try {
+      // Attempt login
+      const session = await login(username, password);
 
-    if (session) {
-      // Success - trigger app reload
-      onLoginSuccess();
-    } else {
-      // Failed
-      setError('Invalid username or password');
+      if (session) {
+        // Success - trigger app reload
+        onLoginSuccess();
+      } else {
+        // Failed
+        setError('Invalid username or password');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Failed to connect to server');
       setIsLoading(false);
     }
   };

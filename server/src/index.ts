@@ -4,9 +4,31 @@ import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import { BoardData, BoardJoinData, StickyUpdateData, InstanceUpdateData, ProjectSaveData, UserInfo } from './types';
 
+// Import database services
+import {
+  getBoardByBoardId,
+  getFullBoard,
+  createBoard,
+  createSticky,
+  updateSticky,
+  deleteSticky,
+  createCanvasInstance,
+  updateCanvasInstance,
+  deleteCanvasInstance,
+  saveBoardState
+} from './database/service';
+
+// Import API routes
+import authRoutes from './routes/auth';
+import boardsRoutes from './routes/boards';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Mount API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/boards', boardsRoutes);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -46,22 +68,75 @@ io.on('connection', (socket: Socket) => {
     // Join the board room
     socket.join(boardId);
 
-    // Get or create board
+    // Get or create board in memory
     let board = boards.get(boardId);
 
     if (!board) {
-      // Create new board
-      board = {
-        id: boardId,
-        ownerId: userId,
-        ownerUsername: username,
-        project: project || { stickies: [], canvasInstances: [] },
-        connectedUsers: new Map(),
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      };
+      // Try to load from database first
+      const dbBoard = getBoardByBoardId(boardId);
+
+      if (dbBoard) {
+        // Load existing board from database
+        const fullBoard = getFullBoard(dbBoard.id);
+
+        if (fullBoard) {
+          console.log(`Loaded board from database: ${boardId} owned by ${fullBoard.owner_username}`);
+
+          board = {
+            id: boardId,
+            ownerId: fullBoard.owner_id,
+            ownerUsername: fullBoard.owner_username,
+            project: {
+              stickies: fullBoard.stickies.map(s => ({
+                id: s.id,
+                text: s.text,
+                color: s.color,
+                createdAt: s.created_at
+              })),
+              canvasInstances: fullBoard.canvasInstances.map(ci => ({
+                id: ci.id,
+                stickyId: ci.sticky_id,
+                x: ci.x,
+                y: ci.y,
+                width: ci.width,
+                height: ci.height,
+                zIndex: ci.z_index,
+                overriddenText: ci.overridden_text
+              }))
+            },
+            connectedUsers: new Map(),
+            createdAt: fullBoard.created_at,
+            updatedAt: fullBoard.updated_at
+          };
+        }
+      }
+
+      // If still no board, create new one (both in memory and database)
+      if (!board) {
+        console.log(`Creating new board: ${boardId} owned by ${username}`);
+
+        board = {
+          id: boardId,
+          ownerId: userId,
+          ownerUsername: username,
+          project: project || { stickies: [], canvasInstances: [] },
+          connectedUsers: new Map(),
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+
+        // Create in database (if project data provided)
+        if (project && project.name) {
+          try {
+            createBoard(project.name, userId, boardId);
+            console.log(`Board ${boardId} created in database`);
+          } catch (error) {
+            console.error('Failed to create board in database:', error);
+          }
+        }
+      }
+
       boards.set(boardId, board);
-      console.log(`Created new board: ${boardId} owned by ${username}`);
     }
 
     // Add user to connected users
@@ -215,11 +290,42 @@ io.on('connection', (socket: Socket) => {
     const board = boards.get(boardId);
 
     if (board && currentUserId === board.ownerId) {
-      // Update board state
+      // Update in-memory board state
       board.project = project;
       board.updatedAt = Date.now();
 
       console.log(`Project saved for board ${boardId} by owner ${currentUserId}`);
+
+      // Persist to database
+      const dbBoard = getBoardByBoardId(boardId);
+
+      if (dbBoard) {
+        try {
+          // Convert project data to database format
+          const stickies = project.stickies.map((s: any) => ({
+            id: s.id,
+            text: s.text,
+            color: s.color,
+            created_at: s.createdAt
+          }));
+
+          const instances = project.canvasInstances.map((ci: any) => ({
+            id: ci.id,
+            sticky_id: ci.stickyId,
+            x: ci.x,
+            y: ci.y,
+            width: ci.width,
+            height: ci.height,
+            z_index: ci.zIndex,
+            overridden_text: ci.overriddenText
+          }));
+
+          saveBoardState(dbBoard.id, stickies, instances);
+          console.log(`Board ${boardId} persisted to database`);
+        } catch (error) {
+          console.error('Failed to persist board to database:', error);
+        }
+      }
 
       // Confirm to the owner
       socket.emit('project:saved', { success: true });
@@ -282,10 +388,10 @@ io.on('connection', (socket: Socket) => {
           }))
         });
 
-        // Clean up empty boards (optional)
+        // Clean up empty boards - remove from memory so next join reloads from database
         if (board.connectedUsers.size === 0) {
-          console.log(`Board ${currentBoardId} is empty, keeping for 1 hour...`);
-          // Could implement cleanup timer here
+          console.log(`Board ${currentBoardId} is empty, removing from memory`);
+          boards.delete(currentBoardId);
         }
       }
     }

@@ -40,8 +40,8 @@ export interface StoreState {
   // Auth state
   session: import('./auth').Session | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 
   // Collaboration state
   boardId: string | null;

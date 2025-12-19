@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { Project, Sticky, CanvasInstance, StoreState } from '../types';
-import { getSession, login as authLogin, logout as authLogout } from '../services/authService';
+import { getSessionSync, login as authLogin, logout as authLogout } from '../services/authService';
 import { websocketService } from '../services/websocketService';
+import { saveProject as saveToProjectsList } from './projectStorage';
 
 const STORAGE_KEY = 'card-sorting-tool-project';
 const MAX_HISTORY = 50;
@@ -23,13 +24,15 @@ const loadFromStorage = (): Project | null => {
 const saveToStorage = (project: Project) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    // Also save to projects list to keep it in sync
+    saveToProjectsList(project);
   } catch (error) {
     console.error('Failed to save to localStorage:', error);
   }
 };
 
 // Create initial project
-const createInitialProject = (session?: ReturnType<typeof getSession>): Project => ({
+const createInitialProject = (session?: ReturnType<typeof getSessionSync>): Project => ({
   id: generateId(),
   name: 'Untitled Project',
   stickies: [],
@@ -40,7 +43,7 @@ const createInitialProject = (session?: ReturnType<typeof getSession>): Project 
   ownerUsername: session?.username,
 });
 
-const initialSession = getSession();
+const initialSession = getSessionSync();
 const initialProject = loadFromStorage() || createInitialProject(initialSession);
 const initialIsOwner = initialSession !== null && initialProject.ownerId === initialSession.userId;
 
@@ -64,17 +67,35 @@ export const useStore = create<StoreState>((set, get) => ({
   _skipBroadcast: false,
 
   // Auth actions
-  login: (username: string, password: string): boolean => {
-    const session = authLogin(username, password);
+  login: async (username: string, password: string): Promise<boolean> => {
+    const session = await authLogin(username, password);
     if (session) {
-      set({ session, isAuthenticated: true });
+      console.log('🔐 Login successful:', session);
+
+      // Create a fresh project for this user
+      const freshProject = createInitialProject(session);
+      console.log('📝 Created fresh project for user:', {
+        projectId: freshProject.id,
+        projectName: freshProject.name,
+        ownerId: freshProject.ownerId,
+        ownerUsername: freshProject.ownerUsername
+      });
+
+      set({
+        session,
+        isAuthenticated: true,
+        project: freshProject,
+        history: [freshProject],
+        historyIndex: 0,
+        isOwner: true,
+      });
       return true;
     }
     return false;
   },
 
-  logout: () => {
-    authLogout();
+  logout: async () => {
+    await authLogout();
     websocketService.disconnect();
 
     // Clear the working project from localStorage

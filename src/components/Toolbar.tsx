@@ -5,7 +5,8 @@ import { AIModal } from './AIModal';
 import { SaveProjectModal } from './SaveProjectModal';
 import { Dashboard } from './Dashboard';
 import { CollaborationStatus } from './CollaborationStatus';
-import { saveProject, isProjectSaved, saveProjectAs } from '../store/projectStorage';
+import { saveProject, isProjectSaved, saveProjectAs, getAllProjects } from '../store/projectStorage';
+import { apiCreateBoard, apiSaveBoardState } from '../services/apiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -38,12 +39,11 @@ export const Toolbar = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
-  const handleSaveProject = (name: string) => {
+  const handleSaveProject = async (name: string) => {
     // Update project name if changed
     if (name !== project.name) {
       updateProjectName(name);
     }
-    // Save to localStorage (overwrites existing)
     // Ensure owner info is set
     const updatedProject = {
       ...project,
@@ -52,64 +52,180 @@ export const Toolbar = () => {
       ownerId: project.ownerId || session?.userId,
       ownerUsername: project.ownerUsername || session?.username,
     };
+
+    // Save to localStorage for local caching
     saveProject(updatedProject);
+
+    // Also save to database if project.id exists
+    if (updatedProject.id) {
+      try {
+        // Convert data format from camelCase to snake_case for database
+        const dbStickies = updatedProject.stickies.map(s => ({
+          id: s.id,
+          text: s.text,
+          color: s.color,
+          created_at: s.createdAt
+        }));
+
+        const dbInstances = updatedProject.canvasInstances.map(ci => ({
+          id: ci.id,
+          sticky_id: ci.stickyId,
+          x: ci.x,
+          y: ci.y,
+          width: ci.width,
+          height: ci.height,
+          z_index: ci.zIndex,
+          overridden_text: ci.overriddenText
+        }));
+
+        await apiSaveBoardState(
+          updatedProject.id,
+          dbStickies,
+          dbInstances
+        );
+        console.log('✅ Board saved to database');
+      } catch (error) {
+        console.error('❌ Failed to save to database:', error);
+        alert('Warning: Board saved locally but failed to sync to database');
+      }
+    }
+
     setIsSaveModalOpen(false);
   };
 
-  const handleSaveAsProject = (name: string) => {
-    // Save as a new project with new ID
-    // Set current user as owner of the new project
+  const handleSaveAsProject = async (name: string) => {
+    // Generate new IDs for the duplicate
+    const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const generateBoardId = () => `board-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    const newBoardId = generateBoardId();
+
     const projectWithOwner = {
       ...project,
       ownerId: session?.userId,
       ownerUsername: session?.username,
     };
+
+    // Save locally first
     const newProject = saveProjectAs(projectWithOwner, name);
+
+    // Create in database
+    try {
+      const dbBoard = await apiCreateBoard(name, newBoardId);
+      if (dbBoard) {
+        console.log('✅ New board created in database:', dbBoard);
+
+        // Save the stickies and instances (convert to database format)
+        const dbStickies = newProject.stickies.map(s => ({
+          id: s.id,
+          text: s.text,
+          color: s.color,
+          created_at: s.createdAt
+        }));
+
+        const dbInstances = newProject.canvasInstances.map(ci => ({
+          id: ci.id,
+          sticky_id: ci.stickyId,
+          x: ci.x,
+          y: ci.y,
+          width: ci.width,
+          height: ci.height,
+          z_index: ci.zIndex,
+          overridden_text: ci.overriddenText
+        }));
+
+        await apiSaveBoardState(
+          dbBoard.id,
+          dbStickies,
+          dbInstances
+        );
+      }
+    } catch (error) {
+      console.error('❌ Failed to create board in database:', error);
+    }
+
     // Load the new project into the store
     const { loadProject } = useStore.getState();
     loadProject(newProject);
     setIsSaveModalOpen(false);
   };
 
-  const handleNewProject = () => {
-    // Ask for project name
-    const projectName = prompt('Enter new project name:');
+  const handleNewProject = async () => {
+    // Ask for board name
+    const boardName = prompt('Enter new board name:');
 
-    if (!projectName || projectName.trim().length < 3) {
-      if (projectName !== null) {
-        alert('Project name must be at least 3 characters');
+    if (!boardName || boardName.trim().length < 3) {
+      if (boardName !== null) {
+        alert('Board name must be at least 3 characters');
       }
       return;
     }
 
-    // Create new project with the given name
-    const { loadProject } = useStore.getState();
+    // Create new board with the given name
     const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const generateBoardId = () => `board-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    // Create a new boardId for this board
+    const newBoardId = generateBoardId();
+
+    console.log('🆕 Creating new board:', boardName);
+    console.log('📝 Current session:', session);
+
+    // Create in database first
+    let dbBoardId = generateId();
+    try {
+      const dbBoard = await apiCreateBoard(boardName.trim(), newBoardId);
+      if (dbBoard) {
+        dbBoardId = dbBoard.id;
+        console.log('✅ Board created in database:', dbBoard);
+      }
+    } catch (error) {
+      console.error('❌ Failed to create board in database:', error);
+      alert('Warning: Could not save to database. Board will be local only.');
+    }
 
     const newProject = {
-      id: generateId(),
-      name: projectName.trim(),
+      id: dbBoardId,
+      name: boardName.trim(),
       stickies: [],
       canvasInstances: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ownerId: session?.userId,
       ownerUsername: session?.username,
+      boardId: newBoardId,
     };
 
-    // Save it immediately to localStorage
+    // Save it to localStorage
     saveProject(newProject);
+    console.log('💾 Board saved to localStorage with boardId:', newBoardId);
 
-    // Load it into the editor
+    // Verify it was saved
+    const allProjects = getAllProjects();
+    console.log('📋 All saved boards:', allProjects);
+
+    // Load the project into the store (updates UI immediately)
+    const { loadProject, setBoardId } = useStore.getState();
     loadProject(newProject);
 
-    // Clear URL params to create fresh board
-    window.history.replaceState({}, '', window.location.pathname);
+    // Set the boardId in store
+    if (session) {
+      setBoardId(newBoardId, session.userId, session.username);
+    }
+
+    // Update URL and reload to properly initialize WebSocket connection
+    const newUrl = `${window.location.pathname}?boardId=${newBoardId}`;
+    window.history.replaceState({}, '', newUrl);
+
+    // Reload page to properly initialize WebSocket connection with new boardId
+    window.location.reload();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
-      logout();
+      await logout();
+      // Clear URL params to prevent next user from joining this board
+      window.history.replaceState({}, '', window.location.pathname);
       window.location.reload();
     }
   };
@@ -225,7 +341,7 @@ export const Toolbar = () => {
             <button
               onClick={() => setIsEditingName(true)}
               className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
-              title="Edit project name"
+              title="Edit board name"
             >
               <Edit3 size={16} className="text-gray-500" />
             </button>
@@ -241,13 +357,13 @@ export const Toolbar = () => {
         {/* Collaboration Status */}
         <CollaborationStatus />
 
-        {/* Project Management */}
+        {/* Board Management */}
         <div className="flex items-center gap-1 mr-2 border-r pr-2">
           <button
             onClick={() => setIsSaveModalOpen(true)}
             disabled={!isOwner}
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isOwner ? "Save Project" : "Only board owner can save"}
+            title={isOwner ? "Save Board" : "Only board owner can save"}
           >
             <Save size={18} />
             <span className="text-sm">Save</span>
@@ -255,7 +371,7 @@ export const Toolbar = () => {
           <button
             onClick={() => setIsDashboardOpen(true)}
             className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition-colors"
-            title="View All Projects"
+            title="View All Boards"
           >
             <FolderOpen size={18} />
             <span className="text-sm">Dashboard</span>
@@ -263,7 +379,7 @@ export const Toolbar = () => {
           <button
             onClick={handleNewProject}
             className="flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-            title="New Project"
+            title="New Board"
           >
             <Plus size={18} />
             <span className="text-sm">New</span>
@@ -317,7 +433,7 @@ export const Toolbar = () => {
       {/* AI Modal */}
       <AIModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
 
-      {/* Save Project Modal */}
+      {/* Save Board Modal */}
       <SaveProjectModal
         isOpen={isSaveModalOpen}
         currentProjectName={project.name}
