@@ -6,7 +6,7 @@ import { SaveProjectModal } from './SaveProjectModal';
 import { Dashboard } from './Dashboard';
 import { CollaborationStatus } from './CollaborationStatus';
 import { saveProject, isProjectSaved, saveProjectAs, getAllProjects } from '../store/projectStorage';
-import { apiCreateBoard, apiSaveBoardState } from '../services/apiService';
+import { apiCreateBoard, apiSaveBoardState, apiGetBoard } from '../services/apiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -56,38 +56,67 @@ export const Toolbar = () => {
     // Save to localStorage for local caching
     saveProject(updatedProject);
 
-    // Also save to database if project.id exists
-    if (updatedProject.id) {
-      try {
-        // Convert data format from camelCase to snake_case for database
-        const dbStickies = updatedProject.stickies.map(s => ({
-          id: s.id,
-          text: s.text,
-          color: s.color,
-          created_at: s.createdAt
-        }));
+    // Also save to database
+    try {
+      // Convert data format from camelCase to snake_case for database
+      const dbStickies = updatedProject.stickies.map(s => ({
+        id: s.id,
+        text: s.text,
+        color: s.color,
+        created_at: s.createdAt
+      }));
 
-        const dbInstances = updatedProject.canvasInstances.map(ci => ({
-          id: ci.id,
-          sticky_id: ci.stickyId,
-          x: ci.x,
-          y: ci.y,
-          width: ci.width,
-          height: ci.height,
-          z_index: ci.zIndex,
-          overridden_text: ci.overriddenText
-        }));
+      const dbInstances = updatedProject.canvasInstances.map(ci => ({
+        id: ci.id,
+        sticky_id: ci.stickyId,
+        x: ci.x,
+        y: ci.y,
+        width: ci.width,
+        height: ci.height,
+        z_index: ci.zIndex,
+        overridden_text: ci.overriddenText
+      }));
 
-        await apiSaveBoardState(
-          updatedProject.id,
-          dbStickies,
-          dbInstances
-        );
-        console.log('✅ Board saved to database');
-      } catch (error) {
-        console.error('❌ Failed to save to database:', error);
-        alert('Warning: Board saved locally but failed to sync to database');
+      // Check if board exists in database
+      let dbBoardId = updatedProject.id;
+
+      if (updatedProject.id) {
+        const existingBoard = await apiGetBoard(updatedProject.id);
+
+        if (!existingBoard) {
+          // Board doesn't exist in database, create it first
+          console.log('⚠️ Board not found in database, creating...');
+          const newBoard = await apiCreateBoard(updatedProject.name, updatedProject.boardId);
+
+          if (newBoard) {
+            dbBoardId = newBoard.id;
+            console.log('✅ Board created in database:', newBoard);
+          } else {
+            throw new Error('Failed to create board in database');
+          }
+        }
+      } else {
+        // No ID at all, create new board
+        const newBoard = await apiCreateBoard(updatedProject.name, updatedProject.boardId);
+
+        if (newBoard) {
+          dbBoardId = newBoard.id;
+          console.log('✅ Board created in database:', newBoard);
+        } else {
+          throw new Error('Failed to create board in database');
+        }
       }
+
+      // Now save the board state
+      await apiSaveBoardState(
+        dbBoardId,
+        dbStickies,
+        dbInstances
+      );
+      console.log('✅ Board saved to database');
+    } catch (error) {
+      console.error('❌ Failed to save to database:', error);
+      alert('Warning: Board saved locally but failed to sync to database');
     }
 
     setIsSaveModalOpen(false);
