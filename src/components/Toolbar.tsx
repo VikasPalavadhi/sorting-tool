@@ -6,7 +6,7 @@ import { SaveProjectModal } from './SaveProjectModal';
 import { Dashboard } from './Dashboard';
 import { CollaborationStatus } from './CollaborationStatus';
 import { saveProject, isProjectSaved, saveProjectAs, getAllProjects } from '../store/projectStorage';
-import { apiCreateBoard, apiSaveBoardState, apiGetBoard } from '../services/apiService';
+import { apiCreateBoard, apiSaveBoardState, apiGetBoard, apiGetBoardByBoardId } from '../services/apiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -79,17 +79,25 @@ export const Toolbar = () => {
 
       // Check if board exists in database
       let dbBoardId = updatedProject.id;
-
-      // Try to find board in database only if ID looks like a database ID (numeric)
-      const isDatabaseId = updatedProject.id && /^\d+$/.test(updatedProject.id);
       let existingBoard = null;
 
+      // First, try to find by database ID (if it's numeric)
+      const isDatabaseId = updatedProject.id && /^\d+$/.test(updatedProject.id);
       if (isDatabaseId) {
         existingBoard = await apiGetBoard(updatedProject.id);
       }
 
+      // If not found by ID, try to find by boardId (collaboration ID)
+      if (!existingBoard && updatedProject.boardId) {
+        existingBoard = await apiGetBoardByBoardId(updatedProject.boardId);
+        if (existingBoard) {
+          console.log('✅ Found existing board by boardId:', existingBoard.id);
+          dbBoardId = existingBoard.id;
+        }
+      }
+
+      // If board still doesn't exist, create it
       if (!existingBoard) {
-        // Board doesn't exist in database, create it first
         console.log('⚠️ Board not found in database, creating...');
 
         // Ensure we have a boardId (for collaboration)
