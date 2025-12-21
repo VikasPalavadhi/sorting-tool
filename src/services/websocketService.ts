@@ -8,7 +8,11 @@ class WebSocketService {
   private eventHandlers: Map<string, EventCallback[]> = new Map();
 
   constructor() {
-    this.serverUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+    // In production, use empty string (same domain) for WebSocket
+    // In development, use localhost
+    this.serverUrl = import.meta.env.VITE_WS_URL !== undefined
+      ? import.meta.env.VITE_WS_URL
+      : (import.meta.env.MODE === 'production' ? '' : 'http://localhost:3001');
   }
 
   /**
