@@ -80,28 +80,35 @@ export const Toolbar = () => {
       // Check if board exists in database
       let dbBoardId = updatedProject.id;
 
-      if (updatedProject.id) {
-        const existingBoard = await apiGetBoard(updatedProject.id);
+      // Try to find board in database only if ID looks like a database ID (numeric)
+      const isDatabaseId = updatedProject.id && /^\d+$/.test(updatedProject.id);
+      let existingBoard = null;
 
-        if (!existingBoard) {
-          // Board doesn't exist in database, create it first
-          console.log('⚠️ Board not found in database, creating...');
-          const newBoard = await apiCreateBoard(updatedProject.name, updatedProject.boardId);
+      if (isDatabaseId) {
+        existingBoard = await apiGetBoard(updatedProject.id);
+      }
 
-          if (newBoard) {
-            dbBoardId = newBoard.id;
-            console.log('✅ Board created in database:', newBoard);
-          } else {
-            throw new Error('Failed to create board in database');
-          }
-        }
-      } else {
-        // No ID at all, create new board
-        const newBoard = await apiCreateBoard(updatedProject.name, updatedProject.boardId);
+      if (!existingBoard) {
+        // Board doesn't exist in database, create it first
+        console.log('⚠️ Board not found in database, creating...');
+
+        // Ensure we have a boardId (for collaboration)
+        const collaborationBoardId = updatedProject.boardId ||
+          `board-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+        const newBoard = await apiCreateBoard(updatedProject.name, collaborationBoardId);
 
         if (newBoard) {
           dbBoardId = newBoard.id;
           console.log('✅ Board created in database:', newBoard);
+
+          // Update the local project with the new database ID and boardId
+          const { loadProject } = useStore.getState();
+          loadProject({
+            ...updatedProject,
+            id: newBoard.id,
+            boardId: collaborationBoardId
+          });
         } else {
           throw new Error('Failed to create board in database');
         }
