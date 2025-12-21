@@ -125,6 +125,8 @@ export interface BoardMetadata {
   ownerUsername: string;
   createdAt: number;
   updatedAt: number;
+  stickyCount: number;
+  canvasCount: number;
 }
 
 export interface FullBoardResponse {

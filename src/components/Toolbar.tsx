@@ -6,7 +6,7 @@ import { SaveProjectModal } from './SaveProjectModal';
 import { Dashboard } from './Dashboard';
 import { CollaborationStatus } from './CollaborationStatus';
 import { saveProject, isProjectSaved, saveProjectAs, getAllProjects } from '../store/projectStorage';
-import { apiCreateBoard, apiSaveBoardState, apiGetBoard, apiGetBoardByBoardId } from '../services/apiService';
+import { apiCreateBoard, apiSaveBoardState, apiGetBoard, apiGetBoardByBoardId, apiGetAllBoards } from '../services/apiService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -123,12 +123,40 @@ export const Toolbar = () => {
       }
 
       // Now save the board state
-      await apiSaveBoardState(
+      const saveSuccess = await apiSaveBoardState(
         dbBoardId,
         dbStickies,
         dbInstances
       );
-      console.log('✅ Board saved to database');
+
+      if (saveSuccess) {
+        console.log('✅ Board saved to database');
+
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.textContent = '✅ Board saved successfully!';
+        notification.style.cssText = `
+          position: fixed;
+          top: 80px;
+          right: 20px;
+          background: #10b981;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 500;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          z-index: 9999;
+          animation: slideIn 0.3s ease-out;
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.animation = 'slideOut 0.3s ease-in';
+          setTimeout(() => notification.remove(), 300);
+        }, 2000);
+      } else {
+        throw new Error('Save operation returned false');
+      }
     } catch (error) {
       console.error('❌ Failed to save to database:', error);
       alert('Warning: Board saved locally but failed to sync to database');
@@ -202,6 +230,21 @@ export const Toolbar = () => {
         alert('Board name must be at least 3 characters');
       }
       return;
+    }
+
+    // Check if board with same name already exists
+    try {
+      const existingBoards = await apiGetAllBoards();
+      const duplicateName = existingBoards.some(
+        board => board.name.toLowerCase() === boardName.trim().toLowerCase()
+      );
+
+      if (duplicateName) {
+        alert('A board with this name already exists. Please choose a different name.');
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check for duplicate names:', error);
     }
 
     // Create new board with the given name

@@ -37,8 +37,8 @@ export const Dashboard = ({ isOpen, onClose, onNewProject, showAsMainScreen = fa
           name: board.name,
           createdAt: board.createdAt,
           updatedAt: board.updatedAt,
-          stickyCount: 0, // We don't have this in the metadata endpoint
-          canvasCount: 0, // We don't have this in the metadata endpoint
+          stickyCount: board.stickyCount || 0,
+          canvasCount: board.canvasCount || 0,
           ownerId: board.ownerId,
           ownerUsername: board.ownerUsername
         }));

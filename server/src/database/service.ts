@@ -125,13 +125,25 @@ export function cleanupExpiredSessions(): void {
 
 // ========== BOARD METHODS ==========
 
-export function getUserBoards(userId: string): Board[] {
+export interface BoardWithCounts extends Board {
+  sticky_count: number;
+  canvas_count: number;
+}
+
+export function getUserBoards(userId: string): BoardWithCounts[] {
   const stmt = db.prepare(`
-    SELECT * FROM boards
-    WHERE owner_id = ?
-    ORDER BY updated_at DESC
+    SELECT
+      b.*,
+      COUNT(DISTINCT s.id) as sticky_count,
+      COUNT(DISTINCT ci.id) as canvas_count
+    FROM boards b
+    LEFT JOIN stickies s ON b.id = s.board_id
+    LEFT JOIN canvas_instances ci ON b.id = ci.board_id
+    WHERE b.owner_id = ?
+    GROUP BY b.id
+    ORDER BY b.updated_at DESC
   `);
-  return stmt.all(userId) as Board[];
+  return stmt.all(userId) as BoardWithCounts[];
 }
 
 export function getBoardMetadata(boardId: string): Board | undefined {

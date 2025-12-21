@@ -42,7 +42,9 @@ router.get('/', (req: Request, res: Response) => {
       ownerId: board.owner_id,
       ownerUsername: board.owner_username,
       createdAt: board.created_at,
-      updatedAt: board.updated_at
+      updatedAt: board.updated_at,
+      stickyCount: board.sticky_count,
+      canvasCount: board.canvas_count
     }))
   });
 });
