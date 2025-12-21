@@ -89,6 +89,7 @@ export const Library = () => {
   const { project, createSticky } = useStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(true);
 
   const filteredStickies = project.stickies.filter((sticky) =>
     sticky.text.toLowerCase().includes(searchQuery.toLowerCase())
@@ -96,7 +97,36 @@ export const Library = () => {
 
   return (
     <>
-      <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Mobile toggle button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="md:hidden fixed bottom-4 left-4 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all"
+        title={isOpen ? "Hide Library" : "Show Library"}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {isOpen ? (
+            <path d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path d="M3 12h18M3 6h18M3 18h18" />
+          )}
+        </svg>
+      </button>
+
+      <div className={`
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+        transition-transform duration-300 ease-in-out
+        fixed md:static inset-y-0 left-0 z-40
+        w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full
+      `}>
         <div className="p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-800">Library</h2>

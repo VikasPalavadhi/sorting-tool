@@ -167,13 +167,13 @@ export const Dashboard = ({ isOpen, onClose, onNewProject, showAsMainScreen = fa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
           <div className="flex items-center gap-2">
-            <FolderOpen className="text-blue-600" size={24} />
-            <h2 className="text-xl font-semibold text-gray-800">My Boards</h2>
+            <FolderOpen className="text-blue-600" size={20} />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">My Boards</h2>
           </div>
           <div className="flex items-center gap-2">
             {showAsMainScreen ? (
@@ -197,15 +197,15 @@ export const Dashboard = ({ isOpen, onClose, onNewProject, showAsMainScreen = fa
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <FolderOpen size={64} className="mb-4" />
-              <p className="text-lg font-medium mb-2">No boards yet</p>
-              <p className="text-sm">Create your first board to get started!</p>
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-gray-400">
+              <FolderOpen size={48} className="mb-4 sm:w-16 sm:h-16" />
+              <p className="text-base sm:text-lg font-medium mb-2">No boards yet</p>
+              <p className="text-xs sm:text-sm">Create your first board to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {projects.map((project) => (
                 <div
                   key={project.id}

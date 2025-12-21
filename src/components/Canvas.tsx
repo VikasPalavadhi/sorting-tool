@@ -81,10 +81,12 @@ const CanvasContent = () => {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`relative w-full h-full min-h-screen ${
+          className={`relative ${
             isOver ? 'bg-blue-50' : 'bg-white'
           } transition-colors`}
           style={{
+            width: '4000px',
+            height: '3000px',
             backgroundImage: `
               linear-gradient(to right, #e5e7eb 1px, transparent 1px),
               linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)

@@ -409,8 +409,8 @@ export const Toolbar = () => {
 
 
   return (
-    <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
+    <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-6">
+      <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
         {isEditingName ? (
           <input
             type="text"
@@ -423,7 +423,7 @@ export const Toolbar = () => {
           />
         ) : (
           <div className="flex items-center gap-2 group">
-            <h1 className="text-xl font-semibold text-gray-800">{project.name}</h1>
+            <h1 className="text-base md:text-xl font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{project.name}</h1>
             <button
               onClick={() => setIsEditingName(true)}
               className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
@@ -434,37 +434,39 @@ export const Toolbar = () => {
           </div>
         )}
 
-        <div className="text-sm text-gray-500">
+        <div className="hidden sm:block text-sm text-gray-500">
           {project.stickies.length} stickies • {project.canvasInstances.length} on canvas
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2">
         {/* Collaboration Status */}
-        <CollaborationStatus />
+        <div className="hidden lg:block">
+          <CollaborationStatus />
+        </div>
 
         {/* Board Management */}
-        <div className="flex items-center gap-1 mr-2 border-r pr-2">
+        <div className="flex items-center gap-1 mr-1 md:mr-2 border-r pr-1 md:pr-2">
           <button
             onClick={() => setIsSaveModalOpen(true)}
             disabled={!isOwner}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={isOwner ? "Save Board" : "Only board owner can save"}
           >
             <Save size={18} />
-            <span className="text-sm">Save</span>
+            <span className="text-sm hidden sm:inline">Save</span>
           </button>
           <button
             onClick={() => setIsDashboardOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition-colors"
             title="View All Boards"
           >
             <FolderOpen size={18} />
-            <span className="text-sm">Dashboard</span>
+            <span className="text-sm hidden md:inline">Dashboard</span>
           </button>
           <button
             onClick={handleNewProject}
-            className="flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+            className="hidden md:flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
             title="New Board"
           >
             <Plus size={18} />
@@ -476,7 +478,7 @@ export const Toolbar = () => {
         {isOwner && boardId && (
           <button
             onClick={copyBoardUrl}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            className="hidden lg:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
             title="Share board link with collaborators"
           >
             <Share2 size={18} />
@@ -487,7 +489,7 @@ export const Toolbar = () => {
         {/* AI Review */}
         <button
           onClick={() => setIsAIModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 transition-colors"
+          className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 transition-colors"
           title="AI Review Assistant"
         >
           <Sparkles size={18} />
@@ -498,21 +500,21 @@ export const Toolbar = () => {
         <button
           onClick={handleExportPDF}
           disabled={isExportingPDF || project.canvasInstances.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Export canvas as PDF"
         >
           <FileDown size={18} />
-          <span className="text-sm">{isExportingPDF ? 'Exporting...' : 'Export PDF'}</span>
+          <span className="text-sm hidden lg:inline">{isExportingPDF ? 'Exporting...' : 'Export PDF'}</span>
         </button>
 
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors ml-2"
+          className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors ml-1 md:ml-2"
           title="Logout"
         >
           <LogOut size={18} />
-          <span className="text-sm">Logout</span>
+          <span className="text-sm hidden sm:inline">Logout</span>
         </button>
       </div>
 
